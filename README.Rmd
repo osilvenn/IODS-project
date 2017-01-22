@@ -1,10 +1,7 @@
-
-# About the project
-## Introduction to Open Data Science
+## About the course
 Introduction to Open Data Science is a course for (doctoral) students who wish to learn more about:  
 1. open data  
 2. open science  
 3. data science  
 
-## My github repository
-[Link](https://github.com/osilvenn/IODS-project)
+[Link](https://*your-github_username*.github.io/IODS-project/)
