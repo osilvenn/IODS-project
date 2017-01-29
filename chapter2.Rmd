@@ -58,10 +58,10 @@ Residuals:
 Coefficients:  
             Estimate Std. Error t value Pr(>|t|)    
 (Intercept)   8.9798     2.4030   3.737 0.000258 ***  
-genderM      -0.2236     0.9248  -0.242 0.809231    
+genderM      -0.2236     0.9248  -0.242 0.809231  
 attitude      3.5100     0.5956   5.893 2.13e-08 ***  
-stra          0.8911     0.5441   1.638 0.103419    
----  
+stra          0.8911     0.5441   1.638 0.103419  
+  
 Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1  
  
 Residual standard error: 5.304 on 162 degrees of freedom  
