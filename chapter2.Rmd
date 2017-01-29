@@ -81,10 +81,11 @@ Coefficients:
      
 The result is, then, that a positive attitude correlates with exam success, while gender and a strategic learning style do not.
 
-# Part 5  
+## Part 5  
 To finalise the analysis, I produced diagnostic figures on the model. The code was as follows:  
 `par(mfrow = c(2,2))`  
 `plot(model2, which = c(1, 2, 5))`  
 Here are the plots:
 ![The diagnostic plots for `model2`.](/Users/ollisilvennoinen/IODS-project/data/Ch2diagnostic.png)
+
 The first figure shows *residuals versus fitted values*. There is not much patterning here, which suggests that the assumptions of linear regression are not violated, at least not strongly. The second figure shows *the QQ plot*, in which the observations fall on the regression line, again suggesting that the assumptions are met reasonably well. The third plot measures *residuals versus leverage*. Since the leverage scores shown on the plot are small, no individual observations seem to have excessive leverage in comparison with the others, so the assumptions of linear regression modelling are met yet again.
