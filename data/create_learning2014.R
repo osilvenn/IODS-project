@@ -5,14 +5,14 @@
 install.packages("dplyr")
 library(dplyr)
 
-# Reading the data file:
+# Reading the data file and calling it data1:
 data1 <- read.table("http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS3-data.txt", header = TRUE)
 
 # Structure and dimensions of the data file (183 observations x 60 variables):
 str(data1)
 dim(data1)
 
-# Creating the analysis dataset:
+# Creating the dataset for the analysis:
 data1$attitude <- data1$Attitude / 10
 deep_questions <- c("D03", "D11", "D19", "D27", "D07", "D14", "D22", "D30","D07","D14","D22","D30")
 surface_questions <- c("SU02","SU10","SU18","SU26", "SU05","SU13","SU21","SU29","SU08","SU16","SU24","SU32")

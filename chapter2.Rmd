@@ -1,7 +1,90 @@
-# Insert chapter 2 title here
+# Chapter 2: Linear regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+This is a report that describes my work on the second week's RStudio exercise in the course Introduction to Open Data Science. The dataset concerns the relationship between learning results and various factors related to learning styles in an introductory statistics class.
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+## Part 1  
+I began by downloading the dataset from the file on my computer. I specified that commas were used as separators and that there was a header row in the file.  
+`learning2014 <- read.table("/Users/ollisilvennoinen/IODS-project/chapter2.Rmd", sep = ",", header = TRUE)`  
+I then explored the structure and dimensions of the file using the code below.  
+`str(learning2014)`  
+`dim(learning2014)`  
+Starting with the dimensions, the dataset is a 166x7 data frame, i.e. there are 166 observations and seven variables. Here is the output of the `str` function:  
+'data.frame':	166 obs. of  7 variables:  
+ $ age     : int  53 55 49 53 49 38 50 37 37 42 ...  
+ $ attitude: num  3.7 3.1 2.5 3.5 3.7 3.8 3.5 2.9 3.8 2.1 ...  
+ $ points  : int  25 12 24 10 22 21 21 31 24 26 ...  
+ $ gender  : Factor w/ 2 levels "F","M": 1 2 1 2 2 1 2 1 2 1 ...  
+ $ deep    : num  3.75 2.88 3.88 3.5 3.75 ...  
+ $ surf    : num  2.58 3.17 2.25 2.25 2.83 ...  
+ $ stra    : num  3.38 2.75 3.62 3.12 3.62 ...  
+ 
+As I stated above, the research question was what factors explain learning outcomes. Learning outcomes are measured by the variable `points`; this is the target variable. All the other variables are potential explanatory variables. Here are brief descriptions of the variables:  
+* `age`: age of the subjects  
+* `attitude`: attitude towards statistics, on a scale from 1 to 5  
+* `points`: points received on an exam  
+* `gender`: gender of the subjects (male or female)  
+* `deep`: mean score on questions related to deep learning  
+* `surf`: mean score on questions related to surface learning  
+* `stra`: mean score on questions related to strategic learning    
+More information on the dataset can be found on [Kimmo Vehkalahti's webpage](http://www.helsinki.fi/~kvehkala/JYTmooc/JYTOPKYS3-meta.txt).  
+
+## Part 2  
+After this preliminary look into the structure of the dataset, we may now move on to specifics. I explored the variables graphically using the function `ggpairs`:  
+`install.packages("ggplot2")`  
+`library(ggplot2)` 
+`install.packages("GGally")` 
+`library(GGally)` 
+`p <- ggpairs(learning2014, mapping = aes(col = gender), lower = list(combo = wrap("facethist", bins = 20)))` 
+`p` 
+This yielded the following figure:  
+![A scatterplot of the variables and their relationships, with genders marked.](/Users/ollisilvennoinen/IODS-project/data/Ch2ggpairs.png)  
+Men are indicated as turquoise, women as red. Based on the figure, genders do seem to pattern somewhat differently, though there do not appear to be any categorical distinctions, which is as expected. For the most part, the correlation coefficients, which can be seen on the upper-right side of the figure, are similar across genders. Exceptions include the interaction of deep and strategic learning as well as deep learning and attitude.  
+When we zoom in to `points`, which will be our variable of interest in what follows, the most notable correlation coefficients are those of `attitude` (0.437), `surf` (-0.144) and `stra` (0.146). When it comes to `age`, it is interesting to note that the two genders pattern differently.   
+
+## Parts 3 and 4  
+Now that the structure of the dataset and the variables has been described, we can turn to the regression modelling. I decided to see the effects of the variables `gender`, `attitude` and `stra`. This allows me to explore both sociological and social-psychological factors in one model.  
+The following code was used to create the model:  
+`model1 <- lm(points ~ gender + attitude + stra, data = learning2014)`  
+The summary statistics of `model1` were accessed using the `summary` function:  
+`summary(model1)`  
+Here is the output:  
+Call:  
+lm(formula = points ~ gender + attitude + stra, data = learning2014)  
+  
+Residuals:  
+      Min       1Q   Median       3Q      Max    
+-17.7179  -3.3285   0.5343   3.7412  10.9007    
+  
+Coefficients:  
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   8.9798     2.4030   3.737 0.000258 ***  
+genderM      -0.2236     0.9248  -0.242 0.809231    
+attitude      3.5100     0.5956   5.893 2.13e-08 ***  
+stra          0.8911     0.5441   1.638 0.103419    
+---  
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1  
+ 
+Residual standard error: 5.304 on 162 degrees of freedom  
+Multiple R-squared:  0.2051,	Adjusted R-squared:  0.1904  
+F-statistic: 13.93 on 3 and 162 DF,  p-value: 3.982e-08  
+
+The multiple R^2^ indicates that 20.5% of the exam score is explained by the model. Disappointingly, only `attitude` has a significant contribution to the value of `points`, meaning that the 20.5% is solely due to attitudinal factors. Therefore, I ran the regression again using only `attitude` as an explanatory variable.  
+`model2 <- lm(points ~ attitude, data = learning2014)`  
+`model2`  
+The output is short and sweet:  
+Call:
+lm(formula = points ~ attitude, data = learning2014)
+
+Coefficients:
+(Intercept)     attitude  
+     11.637        3.525  
+     
+The result is, then, that a positive attitude correlates with exam success, while gender and a strategic learning style do not.
+
+# Part 5  
+To finalise the analysis, I produced diagnostic figures on the model. The code was as follows:  
+`par(mfrow = c(2,2))`  
+`plot(model2, which = c(1, 2, 5))`  
+Here are the plots:
+![The diagnostic plots for `model2`.](/Users/ollisilvennoinen/IODS-project/data/Ch2diagnostic.png)
+The first figure shows *residuals versus fitted values*. There is not much patterning here, which suggests that the assumptions of linear regression are not violated, at least not strongly. The second figure shows *the QQ plot*, in which the observations fall on the regression line, again suggesting that the assumptions are met reasonably well. The third plot measures *residuals versus leverage*. Since the leverage scores shown on the plot are small, no individual observations seem to have excessive leverage in comparison with the others, so the assumptions of linear regression modelling are met yet again.
