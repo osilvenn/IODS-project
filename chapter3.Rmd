@@ -1,31 +1,95 @@
----
-title: "chapter3"
-author: "Olli Silvennoinen"
-date: "5 2 2017"
-output: html_document
----
+# Chapter 3: Logistic regression  
 
+This document is a report on RStudio exercise 3 on the IODS course. The goal is to study factors having an effect on alcohol consumption. The source of the dataset is the UCI Machine Learning Library; [here](https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION) is a link to where the dataset can be downloaded.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+## Getting started
+
+Let us start by downloading the dataset from the `data` folder.
+
+```{r}
+alc <- read.table("/Users/ollisilvennoinen/IODS-project/data/alc.csv", sep = ",", header = TRUE)
 ```
 
-## R Markdown
+We then continue by looking at the columns in the data file:
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+colnames(alc)
 ```
 
-## Including Plots
+The dataset contains a number of background variables as well as the variable that we are interested in studying, i.e., `high_use`, whether a given participant has high alcohol use or not. The page that contains the data files (linked above) also provides information on the variables. There are 35 variables and 382 observations (in addition, there is a column that gives a unique identifying integer for each observation).
 
-You can also embed plots, for example:
+In this assignment, I shall examine the effects of the following variables on high alcohol use:  
+* `sex`: my hypothesis is that males use alcohol more than females  
+* `age` (ranging from 15 to 22): my hypothesis is that the older the student, the more likely they are to display high use of alcohol  
+* `Medu` (ranging from 0 to 4 on an ordinal scale, 0 being low and 4 high education): my hypothesis is that when a child's mother has low educational attainment, the child is more likely to use alcohol; this is based on the assumption that the mother's educational attainment is a reliable indicator of the social status of the family (so I do not assume a causal relationship from the mother's education to their child's alcohol use)  
+* `G3` (average of final period grade in math and Portuguese, ranging from 0 to 20): my hypothesis is that the lower the grade, the higher the likelihood of high alcohol use  
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## Initial explorations of the variables  
+
+Let us begin by considering each variable in isolation, starting with sex. Here is the breakdown of high users of alcohol by gender (note that TRUE means that the informant is a high user of alcohol). As the cross-tabulation shows, men seem to be more likely to be high users. 
+
+```{r}
+table(alc$high_use, alc$sex)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Next up is the age of the informants, which I visualise using a boxplot; for this, I need the `ggplot2` package.
+
+```{r}
+library(ggplot2)
+g1 <- ggplot(alc, aes(x = high_use, y = age))
+g1 + geom_boxplot() + ylab("age")
+```
+
+As the boxplot shows, those who are coded as being high users are older on average, as my original hypothesis predicted.
+
+Third, I look at `Medu`, this time using a mosaic plot.
+
+```{r}
+plot(table(alc$high_use, alc$Medu))
+```
+
+The verdict for my hypothesis is mixed: getting 1 is more common for the high user group, but so is getting 3.
+
+Finally, I shall have a look at final grades and high alcohol use.
+
+```{r}
+g2 <- ggplot(alc, aes(x = G3, col = high_use))
+g2 + geom_dotplot()
+```
+
+It seems that FALSE is more common towards the upper end of the grade scale while the TRUEs are concentrated towards the middle. This would support my hypothesis.
+
+## Logistic regression
+
+I now fit a logistic regression model on the dataset, using the `glm` function.
+
+```{r}
+m <- glm(high_use ~ sex + age + Medu + G3, data = alc, family = "binomial")
+summary(m)
+```
+
+Of the four variables that I chose, only two are significant: sex and final grade. Since `sex` is a factor variable, females have been chosen by R as the reference level and the model summary only shows the effect that maleness has on alcohol consumption. It turns out that the effect is positive, i.e. that being a male means that one is more likely to use alcohol. The other significant predictor is exam grade, which turns out to have a negative effect, though the effect seems to be slight. Still, this does not conform with my original hypothesis.
+
+I now compute the confidence intervals.
+
+```{r}
+library(dplyr)
+OR <- coef(m) %>% exp
+CI <- confint(m) %>% exp
+cbind(OR, CI)
+```
+
+The confidence intervals confirm the analysis presented above: the intervals for age and the mother's education include 1.00, which means that they are unreliable predictors. The intervals for sex and grade are on either side of 1.00, which means that they work as predictors.
+
+## Predictions
+
+Lastly, I check how well the model manages to predict the observations.
+
+```{r}
+probabilities <- predict(m, type = "response")
+alc <- mutate(alc, probability = probabilities)
+alc <- mutate(alc, prediction = alc$probability > 0.5)
+table(high_use = alc$high_use, prediction = alc$probability > 0.5)
+```
+
+The value 'FALSE' is predicted with a high accuracy. By contrast, 'TRUE' is quite weakly predicted. Therefore, the model requires a bit more work.
