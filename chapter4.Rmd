@@ -1,4 +1,4 @@
-# Exercise 4: Clustering and classification  
+# Chapter 4: Clustering and classification  
 
 ## Introduction  
 
