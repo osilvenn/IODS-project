@@ -1,0 +1,190 @@
+# Exercise 4: Clustering and classification  
+
+## Introduction  
+
+This week's exercise is about clustering and classification. The dataset will be `Boston`, one of the datasets that come with installing R. It is located in the `MASS` package.  
+First, I load the dataset.  
+```{r}
+library(MASS)
+data("Boston")
+```
+
+Then, I have a look at the structure and dimensions of the dataset.  
+```{r}
+str(Boston)
+dim(Boston)
+```
+
+There are 506 rows and 14 variables in the dataset. There is more information on the dataset [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html). The dataset concerns housing values in various suburbs of Boston. The background variables range from crime statistics to the average number of rooms per dwelling and whether the suburb bounds Charles River or not.  
+
+## Overview of the variables  
+
+Now I look at the variables more closely. First, I create a plot matrix of the variables.  
+
+```{r}
+pairs(Boston)
+```
+
+We can also see summaries of the variables in numerical form by using the `summary` function.
+
+```{r}
+summary(Boston)
+```
+
+What this shows is that the variables have quite divergent distributions. For instance, the variable `chas` (bounding Charles river) does not look like it is going to tell us very much about housing values.
+
+At this point, I shall also have a look at correlations among the variables.  
+
+```{r}
+library(tidyverse)
+cor_matrix<-cor(Boston) %>% round(digits = 2)
+cor_matrix
+```
+
+Because of the large number of values, it is useful to plot them.  
+
+```{r}
+library(corrplot)
+corrplot(cor_matrix, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+```
+
+Correlations that exceed 0.70 can be found between the following variables:  
+* `indus` and `nox`  (non-retail business acres and nitrogen oxides concentration)  
+* `indus` and `dis`  (non-retail business acres and distances to business centres; this is a negative correlation)  
+* `indus` and `tax`  (non-retail business acres and full-value property tax rate)  
+* `nox` and `age`  (nitrogen oxides concentration and owner-occupied buildings built before 1940; this is a negative correlation)  
+* `nox` and `dis`  (nitrogen oxides concentration and distances to business centres)  
+* `rm` and `medv`  (average number of rooms per dwelling and median-value of owner-occupied homes)  
+* `age` and `dis`  (owner-occupied buildings built before 1940 and distances to business centres; this is a negative correlation)  
+* `rad` and `tax`  (full-value property tax rate)  
+* `lstat` and `medv`  (percentage of lower-status residents and median value of owner-occupied homes; this is a negative correlation)  
+
+## Standardising the dataset  
+
+As noted above, the variables vary quite a bit. Therefore, it makes sense to scale them using the function with the same name.  
+
+```{r}
+boston_scaled <- scale(Boston)
+summary(boston_scaled)
+boston_scaled <- as.data.frame(boston_scaled)
+```
+
+As the above summary shows, as a result of the scaling, all variables now have zero as their mean.  
+
+Now I turn crime rate or `crim` into a categorical variable by first binning the observations and then using the bins as categorical classes. There will be four bins based on the quantiles of the variable.  
+
+```{r}
+bins <- quantile(c(boston_scaled$crim))
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+table(crime)
+```
+
+Finally, I can use `dplyr` to remove the old `crim` variable from the dataset and add the new `crime` variable to in in the former's stead.  
+
+```{r}
+library(dplyr)
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+str(boston_scaled)
+```
+
+## Creating the test set and the train set  
+
+Before the actual analysis, I need a test set and a train set in order to be able to determine how well my analysis actually fits the data. 80% of the data will be in the train set, the rest in the test set.
+
+```{r}
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+```
+
+We can confirm that this took place by looking at the structure and dimensions of the two subsets of data.  
+
+```{r}
+str(train); dim(train)
+str(test); dim(test)
+```
+
+As the outputs show, the train data has 404 observations, while the test data has only 102 observations (but both have the same number of variables, 14).  
+
+## Linear discriminant analysis  
+
+I am now in a position to fit the linear discriminant analysis on the train set of the data. The categorical crime rate is the target variable, and all other variables are predictors.  
+
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+```
+
+The LDA is then plotted using a biplot.  
+
+```{r}
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+classes <- as.numeric(train$crime)
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 1)
+```
+
+## Predicting  
+
+First, I save the vector that includes the classification of the test set according to the binned crime levels.  
+
+```{r}
+correct_classes <- test$crime
+```
+
+I then remove the `crime` variable from the test set.  
+
+```{r}
+test <- dplyr::select(test, -crime)
+str(test)
+```
+
+After that, I check how well the analysis predicts unseen data, i.e. the test set.  
+
+```{r}
+lda.pred <- predict(lda.fit, newdata = test)
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+The highest numbers should be on the diagonal that goes from the upper left to lower right. As the above table shows, this is what we get, which suggests that the model succeeds in predicting the classes.  
+
+## Clustering  
+
+Lastly, I shall apply k-means clustering to the `Boston` dataset. I first need to download the original dataset and scale it again.  
+
+```{r}
+data("Boston")
+boston_scaled <- scale(Boston)
+```
+
+I shall make the clustering analysis using Euclidean distances. First, I calculate these, and then I perform the k-means clustering itself. Finally, I plot the clusters.  
+
+```{r}
+dist_eu <- dist(boston_scaled)
+km <-kmeans(dist_eu, centers = 10)
+pairs(boston_scaled, col = km$cluster)
+```
+
+However, this is only a first stab on the clusters since I have not yet determined the correct number of clusters in the data. To do this, I need to calculate the total within cluster sum of squares (WCSS) and inspect the result visually to see where the plot 'elbows'.  
+
+```{r}
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(dist_eu, k)$tot.withinss})
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+```
+
+The plot shows that the 'elbow' is around 2, so this is the number of clusters I need to go for. Thus, I run the k-means analysis again, this time setting the number of `centers` at 2.  
+
+```{r}
+km <-kmeans(dist_eu, centers = 10)
+pairs(boston_scaled, col = km$cluster)
+```
