@@ -1,0 +1,82 @@
+# Exercise 5: Dimensionality reduction techniques  
+
+## Preliminaries  
+We begin by loading the dataset into R.  
+```{r}
+human <- read.csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/human2.txt", header = TRUE)
+```  
+We then explore the dataset.  
+```{r}
+str(human)
+dim(human)
+```  
+The `human` dataset contains various indicators of the well-being of various countries.  As the summary shows, there are altogether 155 observations (i.e. countries). The variables are the following:  
+* `Edu2.FM`: the ratio of females to males in secondary education  
+* `Labo.FM`: the ratio of females to males in the labour force  
+* `Edu.Exp`: expected number of years spent in schooling  
+* `Life.Exp`: life expectancy in years  
+* `GNI`: gross national income  
+* `Mat.Mor`: the relativised number of mothers who die at childbirth  
+* `Ado.Birth`: the rate of teenage pregnancies leading to childbirth  
+* `Parli.F`: the percentage of female parliamentarians  
+
+## Overview of the variables  
+We may now have a look at the variables in more detail. First, we have a look at their distributions.  
+```{r}
+library(GGally)
+ggpairs(human)
+```
+The above plot shows that the variables display varying degrees of skewness. For instance, maternal mortality is highly skewed so that the mean value is close to zero. By contrast, the expected number of years spent in schooling appears to be almost normally distributed.  
+We may then see if the variables are correlated by creating a correlation matrix.  
+```{r}
+cor(human) %>% corrplot
+```
+There are strong positive correlations between adolescent birth rate and maternal mortality on the one hand, and life expectancy and expected years spent in schooling on the other. The strongest negative correlation is between maternal mortality and life expectancy. Other strongly negative correlations obtain between maternal mortality and ratio of females to males in secondary education; maternal mortality and expected years spent in schooling; adolescent birthrate and expected years spent in schooling; as well as adolescent birthrate and life expectancy. By contrast, the ration of females to males in the labour market and the proportion of female parliamentarians are only weakly if at all correlated with the other variables.  
+
+## PCA on non-standardised data  
+Now we perform our first attempt at a Principal Component Analysis (PCA) of the dataset. Note that we have not standardised the numeric predictors at this stage, and as we saw above, the variables are quite divergent in their distributional properties. We also visualise the analysis by means of a biplot.  
+```{r}
+pca_human <- prcomp(human)
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+```
+The biplot is not very informative: the first PCA does not really succeed in teasing out the structure in the data.  
+
+## PCA on standardised data  
+Since the first PCA was not a success, we need to go back to the drawing board and standardise the variables. As all variables are numeric, we may scale the whole dataset.  
+```{r}
+human_scale <- scale(human)
+summary(human_scale)
+```
+As the `summary` function's output shows, all variables now have zero as their mean.  
+Let us now give another go at PCA'ing the data.  
+```{r}
+pca_human_scale <- prcomp(human_scale)
+biplot(pca_human_scale, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+```
+The result is a much clearer picture, with some variables associated clearly with PC1 and others with PC2.  
+
+## Interpreting the PCA  
+The variables form three broad groups in the second PCA analysis.  
+* The first group consists of variables `Edu.Exp`, `Edu2.FM`, `Life.Exp` and `GNI`. They are all very closely aligned with negative values of PC1. A high score in these variables is associated with western countries. They display equality, well-being and prosperity.  
+* The second group consists of variables `Mat.Mor` and `Ado.Birth`. They are also associated with PC1, but correlate positively with it and are thus diametrically opposite to the first group. They display a lack of basic healthcare.  
+* The third group consists of variables `Labo.FM` and `Parli.F`. They are associated with PC2. Recall that these variables had little correlation with the others. They are related to formal gender equality, which, interestingly, may be fulfilled in both rich and poor countries.  
+
+## MCA  
+For the final part of this exercise, we perform a Multiple Correspondence Analysis (MCA) on another dataset. This is the `tea` dataset from the package `FactoMineR`, which we shall first read into R.  
+```{r}
+str(tea)
+dim(tea)
+```
+Now we can perform the MCA on the dataset.  
+```{r}
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+tea_time <- select(tea, one_of(keep_columns))
+mca <- MCA(tea_time, graph = FALSE)
+summary(mca)
+```
+We can then visualise the analysis.  
+```{r}
+library(tidyr); library(ggplot2)
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+The plots show that the respondents' tea habits are quite variable.
