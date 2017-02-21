@@ -29,6 +29,8 @@ ggpairs(human)
 The above plot shows that the variables display varying degrees of skewness. For instance, maternal mortality is highly skewed so that the mean value is close to zero. By contrast, the expected number of years spent in schooling appears to be almost normally distributed.  
 We may then see if the variables are correlated by creating a correlation matrix.  
 ```{r}
+library(dplyr)
+library(corrplot)
 cor(human) %>% corrplot
 ```
 There are strong positive correlations between adolescent birth rate and maternal mortality on the one hand, and life expectancy and expected years spent in schooling on the other. The strongest negative correlation is between maternal mortality and life expectancy. Other strongly negative correlations obtain between maternal mortality and ratio of females to males in secondary education; maternal mortality and expected years spent in schooling; adolescent birthrate and expected years spent in schooling; as well as adolescent birthrate and life expectancy. By contrast, the ration of females to males in the labour market and the proportion of female parliamentarians are only weakly if at all correlated with the other variables.  
@@ -37,9 +39,9 @@ There are strong positive correlations between adolescent birth rate and materna
 Now we perform our first attempt at a Principal Component Analysis (PCA) of the dataset. Note that we have not standardised the numeric predictors at this stage, and as we saw above, the variables are quite divergent in their distributional properties. We also visualise the analysis by means of a biplot.  
 ```{r}
 pca_human <- prcomp(human)
-biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
-```
-The biplot is not very informative: the first PCA does not really succeed in teasing out the structure in the data.  
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"), sub = "PC1: GNI vs. the rest")
+```  
+The biplot is not very informative: the first PCA does not really succeed in teasing out the structure in the data. The only variable that is visible in the plot is the GNI, which aligns almost perfectly with PC1.    
 
 ## PCA on standardised data  
 Since the first PCA was not a success, we need to go back to the drawing board and standardise the variables. As all variables are numeric, we may scale the whole dataset.  
@@ -51,8 +53,8 @@ As the `summary` function's output shows, all variables now have zero as their m
 Let us now give another go at PCA'ing the data.  
 ```{r}
 pca_human_scale <- prcomp(human_scale)
-biplot(pca_human_scale, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
-```
+biplot(pca_human_scale, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"), sub = "PCA2: Prosperity and equality")
+```  
 The result is a much clearer picture, with some variables associated clearly with PC1 and others with PC2.  
 
 ## Interpreting the PCA  
@@ -64,6 +66,8 @@ The variables form three broad groups in the second PCA analysis.
 ## MCA  
 For the final part of this exercise, we perform a Multiple Correspondence Analysis (MCA) on another dataset. This is the `tea` dataset from the package `FactoMineR`, which we shall first read into R.  
 ```{r}
+library(FactoMineR)
+data(tea)
 str(tea)
 dim(tea)
 ```
