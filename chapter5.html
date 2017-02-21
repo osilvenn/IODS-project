@@ -271,7 +271,7 @@ str(tea)</code></pre>
 <pre><code>## [1] 300  36</code></pre>
 <p>Now we can perform the MCA on the dataset.</p>
 <pre class="r"><code>keep_columns &lt;- c(&quot;Tea&quot;, &quot;How&quot;, &quot;how&quot;, &quot;sugar&quot;, &quot;where&quot;, &quot;lunch&quot;)
-tea_time &lt;- select(tea, one_of(keep_columns))
+tea_time &lt;- dplyr::select(tea, one_of(keep_columns))
 mca &lt;- MCA(tea_time, graph = FALSE)
 summary(mca)</code></pre>
 <pre><code>## 
